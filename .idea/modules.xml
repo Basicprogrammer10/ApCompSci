@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/garbageClock.iml" filepath="$PROJECT_DIR$/garbageClock.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ApCompSci.iml" filepath="$PROJECT_DIR$/ApCompSci.iml" />
     </modules>
   </component>
 </project>

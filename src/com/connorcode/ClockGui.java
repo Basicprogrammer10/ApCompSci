@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 
-class Main {
+class ClockGui {
     // == Config ==
     static final boolean TITLE_TIME = true;
     static final boolean DIGITAL_TIME = true;
