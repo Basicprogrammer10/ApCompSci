@@ -3,9 +3,15 @@ package com.connorcode;
 import java.awt.*;
 
 public class Misc {
-    record Pair<T, K> (T left, K right) {}
+    public static class Rgb {
+        int r, g, b;
 
-    record Rgb (int r, int g, int b) {
+        Rgb(int r, int g, int b) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+        }
+
         Color asColor() {
             return new Color(this.r, this.g, this.b);
         }
@@ -21,6 +27,24 @@ public class Misc {
             float b = this.b + diff.b * delta;
 
             return new Rgb((int) r, (int) g, (int) b);
+        }
+    }
+
+    public static class Pair<T, K> {
+        T left;
+        K right;
+
+        Pair(T left, K right) {
+            this.left = left;
+            this.right = right;
+        }
+
+        T left() {
+            return this.left;
+        }
+
+        K right() {
+            return this.right;
         }
     }
 }
