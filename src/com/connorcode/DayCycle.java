@@ -4,15 +4,15 @@ import javax.swing.*;
 import java.awt.*;
 
 public class DayCycle {
-    final static Rgb[] grasses = new Rgb[]{
-            new Rgb(65, 152, 10),
-            new Rgb(19, 109, 21)
+    final static Misc.Rgb[] grasses = new Misc.Rgb[]{
+            new Misc.Rgb(65, 152, 10),
+            new Misc.Rgb(19, 109, 21)
     };
-    final static Rgb[] skys = new Rgb[]{
-            new Rgb(248, 139, 24),
-            new Rgb(235, 37, 34),
-            new Rgb(39, 4, 47),
-            new Rgb(39, 4, 47)
+    final static Misc.Rgb[] skys = new Misc.Rgb[]{
+            new Misc.Rgb(248, 139, 24),
+            new Misc.Rgb(235, 37, 34),
+            new Misc.Rgb(39, 4, 47),
+            new Misc.Rgb(39, 4, 47)
     };
     final static int width = 700;
     final static int height = 500;
@@ -76,39 +76,6 @@ public class DayCycle {
                     200
             }, 3));
             gc.fillRect(centerX - 150 / 2, 200, 150, 100);
-        }
-    }
-
-    static class Rgb {
-        final int r;
-        final int g;
-        final int b;
-
-        Rgb(int r, int g, int b) {
-            this.r = r;
-            this.g = g;
-            this.b = b;
-        }
-
-        String asHex() {
-            return String.format("#%02X%02X%02X", r, g, b);
-        }
-
-        Color asColor() {
-            return new Color(r, g, b);
-        }
-
-        Rgb diff(Rgb nc) {
-            return new Rgb(nc.r - r, nc.g - g, nc.b - b);
-        }
-
-        Rgb lerp(Rgb nc, float per) {
-            Rgb diff = this.diff(nc);
-            float r = this.r + diff.r * per;
-            float g = this.g + diff.g * per;
-            float b = this.b + diff.b * per;
-
-            return new Rgb((int) r, (int) g, (int) b);
         }
     }
 }
