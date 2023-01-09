@@ -9,14 +9,14 @@ import java.util.List;
 
 class CircleProject {
     // == Config ==
-    static final int sceneWait = 2000;
+    static final int sceneWait = 1000;
     static final int balls = 20;
     static final int ballSize = 50;
     static final int width = 700;
     static final int height = 500;
     static JFrame frame = new JFrame();
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         frame.addComponentListener(new ResizeListener());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setTitle("Circle Project - Connor Slade");
@@ -24,7 +24,13 @@ class CircleProject {
         frame.setVisible(true);
         frame.add(new Painter(balls));
 
-        while (true) frame.repaint();
+        while (true) {
+            long time = System.currentTimeMillis();
+            frame.repaint();
+            long frameTime = System.currentTimeMillis() - time;
+            if (frameTime <= 0) continue;
+            Thread.sleep(16 - frameTime);
+        }
     }
 
     enum Activity {
@@ -98,8 +104,8 @@ class CircleProject {
                             .allMatch(circle -> circle.y >= bounds.height + circle.radius);
                     if (now - self.lastFrame >= sceneWait && self.frameCount != 0 && done) return true;
                     if (done) return false;
-                    for (Circle circle : self.circles)
-                        circle.y += 1;
+                    for (int i = 0; i < self.circles.size(); i++)
+                        self.circles.get(i).y += i % 2 == 0 ? 2 : 3;
                 }
             }
             return false;
