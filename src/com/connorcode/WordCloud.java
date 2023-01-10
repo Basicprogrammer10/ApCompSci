@@ -2,6 +2,8 @@ package com.connorcode;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
@@ -26,6 +28,8 @@ public class WordCloud {
     public static final Misc.Pair<Integer, Integer> orientationRange = new Misc.Pair<>(-60, 60);
     public static final Font font = new Font("Impact", Font.PLAIN, 100);
     public static final int showTop = 50;
+    public static final float layoutAngleModifier = 0.1f;
+    public static final int layoutRadiusModifier = 30;
 
     // == Other ==
     static final Pattern WORD_REGEX = Pattern.compile("([A-z']+)+");
@@ -44,12 +48,13 @@ public class WordCloud {
             return;
         }
 
-        frame.addComponentListener(new CircleProject.ResizeListener());
+        var cloud = new Cloud(meta.right(), occurrences);
+        frame.addComponentListener(new ResizeListener(cloud));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setTitle("Word Cloud Project - Connor Slade");
         frame.setSize(700, 500);
         frame.setVisible(true);
-        frame.add(new Cloud(meta.right(), occurrences));
+        frame.add(cloud);
 
         LockSupport.park();
     }
@@ -153,12 +158,21 @@ public class WordCloud {
                         .collect(Collectors.toList())) {
 
                     var rotation = Math.toRadians(randomOrientation());
+                    var angle = 0f;
+                    var radius = 10f;
 
                     while (true) {
                         var text = genTextPath(getFontSize(i.getValue(), maxCount), i.getKey(), rotation);
                         var area = new Area(text);
-                        area.transform(
-                                AffineTransform.getTranslateInstance(Math.random() * width, Math.random() * height));
+
+                        area.transform(AffineTransform.getTranslateInstance(width / 2f + radius * Math.cos(Math.PI * angle),
+                                height / 2f + radius * Math.sin(Math.PI * angle)));
+
+                        angle += layoutAngleModifier;
+                        if (angle > 2) {
+                            angle = 0;
+                            radius += layoutRadiusModifier;
+                        }
 
                         if (shapes.stream().anyMatch(e -> {
                             if (!e.intersects(area.getBounds2D())) return false;
@@ -191,6 +205,18 @@ public class WordCloud {
                 gc.setFont(new Font("Arial", Font.BOLD, 20));
                 gc.drawString(title, width - gc.getFontMetrics().stringWidth(title) - 10, height - artistHeight - 20);
             }
+        }
+    }
+
+    static class ResizeListener extends ComponentAdapter {
+        Cloud cloud;
+
+        ResizeListener(Cloud cloud) {
+            this.cloud = cloud;
+        }
+
+        public void componentResized(ComponentEvent e) {
+            cloud.repaint();
         }
     }
 }
