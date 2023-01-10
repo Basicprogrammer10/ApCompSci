@@ -2,27 +2,33 @@ package com.connorcode;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class WordCloud {
-    static final Pattern WORD_REGEX = Pattern.compile("(\\w+)+");
-    static final Misc.Rgb[] palette = new Misc.Rgb[]{
+    // == Config ==
+    public static final Misc.Rgb[] palette = new Misc.Rgb[]{
             new Misc.Rgb(255, 212, 178),
             new Misc.Rgb(255, 246, 189),
             new Misc.Rgb(206, 237, 199),
             new Misc.Rgb(134, 200, 188)
     };
-    static final int orientations = 5;
-    static final Misc.Pair<Integer, Integer> orentationRange = new Misc.Pair<>(-60, 60);
-    static final Font font = new Font("Impact", Font.PLAIN, 100);
+    public static final int orientations = 5;
+    public static final Misc.Pair<Integer, Integer> orentationRange = new Misc.Pair<>(-60, 60);
+    public static final Font font = new Font("Arial", Font.PLAIN, 100);
+    public static final int showTop = 50;
+
+    // == Other ==
+    static final Pattern WORD_REGEX = Pattern.compile("([A-z']+)+");
+    private static final FontRenderContext FRC = new FontRenderContext(null, true, true);
     static JFrame frame = new JFrame();
 
     public static void main(String[] argv) throws IOException, InterruptedException {
@@ -79,12 +85,20 @@ public class WordCloud {
     }
 
     static int randomOrientation() {
-        return (int) (orentationRange.left() + Math.random() * (orentationRange.right() - orentationRange.left()));
+        var quantized = ((int) (Math.random() * orientations)) / (float) orientations;
+        return (int) (orentationRange.left() + quantized * (orentationRange.right() - orentationRange.left()));
     }
 
     static int getFontSize(int count, int maxCount) {
 //        return (int) (Math.log(count) / Math.log(maxCount) * 100);
         return (int) (Math.sqrt(count) / Math.sqrt(maxCount) * 100);
+    }
+
+    public static Shape genTextPath(double size, String text, double rotation) {
+        final Font sizedFont = font.deriveFont((float) size);
+        final GlyphVector gv =
+                sizedFont.layoutGlyphVector(FRC, text.toCharArray(), 0, text.length(), Font.LAYOUT_LEFT_TO_RIGHT);
+        return AffineTransform.getRotateInstance(rotation).createTransformedShape(gv.getOutline());
     }
 
     static class Cloud extends JComponent {
@@ -100,7 +114,6 @@ public class WordCloud {
 
         public void paintComponent(Graphics g) {
             Graphics2D gc = (Graphics2D) g;
-            AffineTransform transform = gc.getTransform();
             gc.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             gc.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
@@ -109,26 +122,41 @@ public class WordCloud {
 
             // Layout the words (the size is dependent on the number of occurrences as stated in the `words` hashmap
             {
+                var shapes = new ArrayList<Area>();
                 gc.setBackground(Color.GRAY);
                 gc.clearRect(0, 0, width, height);
 
+                AtomicInteger count = new AtomicInteger();
                 for (Map.Entry<String, Integer> i : words.entrySet()
                         .stream()
                         .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+                        .takeWhile(e -> count.getAndIncrement() < showTop)
                         .collect(Collectors.toList())) {
-                    transform.setToRotation(Math.toRadians(randomOrientation()), width / 2f, height / 2f);
-                    gc.setTransform(transform);
 
-                    var textX = (int) (Math.random() * width);
-                    var textY = (int) (Math.random() * height);
+                    var rotation = Math.toRadians(randomOrientation());
 
-                    gc.setColor(getColor((float) i.getValue() / maxCount).asColor());
-                    gc.setFont(font.deriveFont((float) getFontSize(i.getValue(), maxCount)));
-                    gc.drawString(i.getKey(), textX, textY);
+                    while (true) {
+                        var text = genTextPath(getFontSize(i.getValue(), maxCount), i.getKey(), rotation);
+                        var area = new Area(text);
+                        area.transform(
+                                AffineTransform.getTranslateInstance(Math.random() * width, Math.random() * height));
+
+                        if (shapes.stream().anyMatch(e -> {
+                            if (e.intersects(area.getBounds2D())) return true;
+                            var intersect = (Area) e.clone();
+                            intersect.intersect(area);
+                            return !intersect.isEmpty();
+                        })) continue;
+
+                        shapes.add(area);
+                        break;
+                    }
                 }
 
-                transform.setToRotation(0, width / 2f, height / 2f);
-                gc.setTransform(transform);
+                for (Area i : shapes) {
+                    gc.setColor(getColor((float) Math.random()).asColor());
+                    gc.fill(i);
+                }
             }
 
             // Draw song info
