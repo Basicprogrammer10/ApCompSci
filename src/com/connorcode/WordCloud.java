@@ -21,9 +21,10 @@ public class WordCloud {
             new Misc.Rgb(206, 237, 199),
             new Misc.Rgb(134, 200, 188)
     };
+    public static final ScaleType scaleType = ScaleType.Sqrt;
     public static final int orientations = 5;
-    public static final Misc.Pair<Integer, Integer> orentationRange = new Misc.Pair<>(-60, 60);
-    public static final Font font = new Font("Arial", Font.PLAIN, 100);
+    public static final Misc.Pair<Integer, Integer> orientationRange = new Misc.Pair<>(-60, 60);
+    public static final Font font = new Font("Impact", Font.PLAIN, 100);
     public static final int showTop = 50;
 
     // == Other ==
@@ -31,11 +32,12 @@ public class WordCloud {
     private static final FontRenderContext FRC = new FontRenderContext(null, true, true);
     static JFrame frame = new JFrame();
 
-    public static void main(String[] argv) throws IOException, InterruptedException {
+    public static void main(String[] argv) throws IOException {
         var raw = new String(
                 Objects.requireNonNull(WordCloud.class.getResourceAsStream("/resources/song.txt")).readAllBytes());
         var meta = trimMeta(raw);
         var occurrences = countWords(meta.left());
+        stripStopWords(occurrences);
 
         if (!(meta.right().containsKey("title") && meta.right().containsKey("artist"))) {
             System.err.println("Song does not have a `title` and `artist`");
@@ -44,7 +46,7 @@ public class WordCloud {
 
         frame.addComponentListener(new CircleProject.ResizeListener());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setTitle("Circle Project - Connor Slade");
+        frame.setTitle("Word Cloud Project - Connor Slade");
         frame.setSize(700, 500);
         frame.setVisible(true);
         frame.add(new Cloud(meta.right(), occurrences));
@@ -77,6 +79,14 @@ public class WordCloud {
         return out;
     }
 
+    static void stripStopWords(HashMap<String, Integer> words) throws IOException {
+        var stopWords = new String(
+                Objects.requireNonNull(WordCloud.class.getResourceAsStream("/resources/stopWords.txt"))
+                        .readAllBytes()).lines().collect(Collectors.toUnmodifiableList());
+
+        stopWords.forEach(words::remove);
+    }
+
     static Misc.Rgb getColor(float delta) {
         float colorSize = 1f / palette.length;
         int colorIndex = Math.min((int) (delta / colorSize), palette.length - 1);
@@ -86,12 +96,15 @@ public class WordCloud {
 
     static int randomOrientation() {
         var quantized = ((int) (Math.random() * orientations)) / (float) orientations;
-        return (int) (orentationRange.left() + quantized * (orentationRange.right() - orentationRange.left()));
+        return (int) (orientationRange.left() + quantized * (orientationRange.right() - orientationRange.left()));
     }
 
     static int getFontSize(int count, int maxCount) {
-//        return (int) (Math.log(count) / Math.log(maxCount) * 100);
-        return (int) (Math.sqrt(count) / Math.sqrt(maxCount) * 100);
+        return switch (scaleType) {
+            case Linear -> (int) ((float) count / (float) maxCount * 100f);
+            case Log -> (int) (Math.log(count) / Math.log(maxCount) * 100);
+            case Sqrt -> (int) (Math.sqrt(count) / Math.sqrt(maxCount) * 100);
+        };
     }
 
     public static Shape genTextPath(double size, String text, double rotation) {
@@ -99,6 +112,12 @@ public class WordCloud {
         final GlyphVector gv =
                 sizedFont.layoutGlyphVector(FRC, text.toCharArray(), 0, text.length(), Font.LAYOUT_LEFT_TO_RIGHT);
         return AffineTransform.getRotateInstance(rotation).createTransformedShape(gv.getOutline());
+    }
+
+    enum ScaleType {
+        Log,
+        Sqrt,
+        Linear
     }
 
     static class Cloud extends JComponent {
@@ -142,7 +161,7 @@ public class WordCloud {
                                 AffineTransform.getTranslateInstance(Math.random() * width, Math.random() * height));
 
                         if (shapes.stream().anyMatch(e -> {
-                            if (e.intersects(area.getBounds2D())) return true;
+                            if (!e.intersects(area.getBounds2D())) return false;
                             var intersect = (Area) e.clone();
                             intersect.intersect(area);
                             return !intersect.isEmpty();
