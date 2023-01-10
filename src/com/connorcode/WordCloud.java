@@ -11,7 +11,6 @@ import java.awt.geom.Area;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -28,8 +27,8 @@ public class WordCloud {
     public static final Misc.Pair<Integer, Integer> orientationRange = new Misc.Pair<>(-60, 60);
     public static final Font font = new Font("Impact", Font.PLAIN, 100);
     public static final int showTop = 50;
-    public static final float layoutAngleModifier = 0.1f;
-    public static final int layoutRadiusModifier = 30;
+    public static final float layoutAngleModifier = (float) Math.toRadians(6);
+    public static final int layoutRadiusModifier = 50;
 
     // == Other ==
     static final Pattern WORD_REGEX = Pattern.compile("([A-z']+)+");
@@ -55,8 +54,6 @@ public class WordCloud {
         frame.setSize(700, 500);
         frame.setVisible(true);
         frame.add(cloud);
-
-        LockSupport.park();
     }
 
     static Misc.Pair<String, HashMap<String, String>> trimMeta(String raw) {
@@ -129,6 +126,8 @@ public class WordCloud {
         private final HashMap<String, String> meta;
         private final HashMap<String, Integer> words;
         private final int maxCount;
+        private final ArrayList<Misc.Pair<Area, Color>> shapes = new ArrayList<>();
+        private boolean isLoading = false;
 
         Cloud(HashMap<String, String> meta, HashMap<String, Integer> words) {
             this.meta = meta;
@@ -146,50 +145,63 @@ public class WordCloud {
 
             // Layout the words (the size is dependent on the number of occurrences as stated in the `words` hashmap
             {
-                var shapes = new ArrayList<Area>();
                 gc.setBackground(Color.GRAY);
                 gc.clearRect(0, 0, width, height);
 
-                AtomicInteger count = new AtomicInteger();
-                for (Map.Entry<String, Integer> i : words.entrySet()
-                        .stream()
-                        .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
-                        .takeWhile(e -> count.getAndIncrement() < showTop)
-                        .collect(Collectors.toList())) {
+                if (shapes.isEmpty()) {
+                    if (!isLoading) {
+                        isLoading = true;
+                        var str = "Generating...";
+                        gc.drawString(str, width / 2 - gc.getFontMetrics().stringWidth(str) / 2,
+                                height / 2 - gc.getFontMetrics().getHeight() / 2);
+                        frame.repaint();
+                        return;
+                    }
 
-                    var rotation = Math.toRadians(randomOrientation());
-                    var angle = 0f;
-                    var radius = 10f;
+                    AtomicInteger count = new AtomicInteger();
+                    for (Map.Entry<String, Integer> i : words.entrySet()
+                            .stream()
+                            .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+                            .takeWhile(e -> count.getAndIncrement() < showTop)
+                            .collect(Collectors.toList())) {
 
-                    while (true) {
-                        var text = genTextPath(getFontSize(i.getValue(), maxCount), i.getKey(), rotation);
-                        var area = new Area(text);
+                        var rotation = Math.toRadians(randomOrientation());
+                        var angle = 0f;
+                        var radius = 10f;
 
-                        area.transform(AffineTransform.getTranslateInstance(width / 2f + radius * Math.cos(Math.PI * angle),
-                                height / 2f + radius * Math.sin(Math.PI * angle)));
+                        while (true) {
+                            var text = genTextPath(getFontSize(i.getValue(), maxCount), i.getKey(), rotation);
+                            var area = new Area(text);
 
-                        angle += layoutAngleModifier;
-                        if (angle > 2) {
-                            angle = 0;
-                            radius += layoutRadiusModifier;
+                            area.transform(AffineTransform.getTranslateInstance(
+                                    width / 2f + radius * Math.cos(Math.PI * angle),
+                                    height / 2f + radius * Math.sin(Math.PI * angle)));
+
+                            angle += layoutAngleModifier;
+                            if (angle > 2) {
+                                angle = 0;
+                                radius += layoutRadiusModifier;
+                            }
+
+                            if (shapes.stream().anyMatch(e -> {
+                                if (!e.left().intersects(area.getBounds2D())) return false;
+                                var intersect = (Area) e.left().clone();
+                                intersect.intersect(area);
+                                return !intersect.isEmpty();
+                            })) continue;
+
+                            var wordCount = Math.min(words.size(), showTop);
+                            System.out.printf("\r%d/%d", wordCount - count.decrementAndGet(), wordCount);
+                            shapes.add(new Misc.Pair<>(area, getColor((float) Math.random()).asColor()));
+                            break;
                         }
-
-                        if (shapes.stream().anyMatch(e -> {
-                            if (!e.intersects(area.getBounds2D())) return false;
-                            var intersect = (Area) e.clone();
-                            intersect.intersect(area);
-                            return !intersect.isEmpty();
-                        })) continue;
-
-                        shapes.add(area);
-                        break;
                     }
                 }
 
-                for (Area i : shapes) {
-                    gc.setColor(getColor((float) Math.random()).asColor());
-                    gc.fill(i);
-                }
+                shapes.forEach(e -> {
+                    gc.setColor(e.right());
+                    gc.fill(e.left());
+                });
             }
 
             // Draw song info
@@ -210,12 +222,27 @@ public class WordCloud {
 
     static class ResizeListener extends ComponentAdapter {
         Cloud cloud;
+        private Misc.Pair<Integer, Integer> lastSize = new Misc.Pair<>(0, 0);
 
         ResizeListener(Cloud cloud) {
             this.cloud = cloud;
         }
 
         public void componentResized(ComponentEvent e) {
+            var newWidth = e.getComponent().getWidth();
+            var newHeight = e.getComponent().getHeight();
+            var newSize = new Misc.Pair<>(newWidth, newHeight);
+            if (lastSize.equals(newSize)) return;
+
+            var oldWidth = lastSize.left();
+            var oldHeight = lastSize.right();
+            lastSize = newSize;
+
+            var widthDiff = newWidth / 2f - oldWidth / 2f;
+            var heightDiff = newHeight / 2f - oldHeight / 2f;
+            var transform = AffineTransform.getTranslateInstance(widthDiff, heightDiff);
+
+            cloud.shapes.forEach(s -> s.left().transform(transform));
             cloud.repaint();
         }
     }

@@ -46,5 +46,14 @@ public class Misc {
         K right() {
             return this.right;
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof Pair) {
+                Pair<?, ?> other = (Pair<?, ?>) obj;
+                return this.left.equals(other.left) && this.right.equals(other.right);
+            }
+            return false;
+        }
     }
 }
