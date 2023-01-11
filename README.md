@@ -4,8 +4,8 @@ all in java 11. \**sigh*\*
 
 ## Projects
 
-### [Word Cloud *(IN PROGRESS)*](https://github.com/Sigma-8214/ApCompSci/blob/main/src/com/connorcode/WordCloud.java)
-<img src="https://user-images.githubusercontent.com/50306817/211441645-24c13a3c-e251-4757-9753-8d127fe70058.png" width="500"></img>
+### [Word Cloud](https://github.com/Sigma-8214/ApCompSci/blob/main/src/com/connorcode/WordCloud.java)
+<img src="https://user-images.githubusercontent.com/50306817/211898484-a92ec19a-ebc3-4524-83dd-106b806c6975.png" width="500"></img>
 
 ### [Clock](https://github.com/Sigma-8214/ApCompSci/blob/main/src/com/connorcode/ClockGui.java)
 <img src="https://user-images.githubusercontent.com/50306817/211441350-7c2dfffd-daa9-490e-8067-1f027691476f.png" width="500"></img>
