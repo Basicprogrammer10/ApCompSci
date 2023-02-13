@@ -1,14 +1,14 @@
 acacia_log.png
-# birch_log.png
-# dark_oak_log.png
-# jungle_log.png
-# mangrove_log.png
-# oak_log.png
-# spruce_log.png
-# stripped_acacia_log.png
-# stripped_birch_log.png
-# stripped_dark_oak_log.png
-# stripped_jungle_log.png
-# stripped_mangrove_log.png
-# stripped_oak_log.png
-# stripped_spruce_log.png
+birch_log.png
+dark_oak_log.png
+jungle_log.png
+mangrove_log.png
+oak_log.png
+spruce_log.png
+stripped_acacia_log.png
+stripped_birch_log.png
+stripped_dark_oak_log.png
+stripped_jungle_log.png
+stripped_mangrove_log.png
+stripped_oak_log.png
+stripped_spruce_log.png
