@@ -1,24 +1,30 @@
 package com.connorcode;
 
+import paintingcanvas.App;
 import paintingcanvas.Canvas;
 import paintingcanvas.drawable.Polygon;
 import paintingcanvas.drawable.Rectangle;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class IsoBlock {
+    static final int X_MOD = 0;
+    static final int Y_MOD = -10;
+    static final int X_BLOCKS = 11;
+
+    // dont change these //
     static final int PIXEL_SIZE = 4;
     static final int PIXEL_WIDTH = 8;
     static final float PIXEL_HEIGHT = 4.7f;
@@ -26,22 +32,36 @@ public class IsoBlock {
     static final ClassLoader loader = IsoBlock.class.getClassLoader();
     static final List<String> BLOCKS = new BufferedReader(new InputStreamReader(
             Objects.requireNonNull(loader.getResourceAsStream("resources/IsoBlock/textures.txt")))).lines()
-            .filter(x -> !x.startsWith("#")).collect(Collectors.toUnmodifiableList());
-    static Canvas _canvas = new Canvas(700, 500, "IsoBlock - Connor Slade");
+            .filter(x -> !x.startsWith("#")).collect(Collectors.toList());
+
+    static {
+        new Canvas(3721, 1750, "IsoBlock - Connor Slade");
+    }
 
     public static void main(String[] args) {
+        Collections.shuffle(BLOCKS);
         // enable dark mode
         new Rectangle(0, 0, 10000, 10000, Color.BLACK);
+
+        // Disable auto-centering
+        App.canvas.canvas.renderLifecycle = new Canvas.CanvasComponent.RenderLifecycle() {
+            @Override
+            public void onResize(Canvas.CanvasComponent canvas, ComponentEvent e) {
+                canvas.repaint();
+            }
+        };
 
         var textures = BLOCKS.stream()
                 .map(i -> new Texture(loader.getResource("resources/IsoBlock/" + i)))
                 .collect(Collectors.toList());
 
-        for (int y = 0; y < 4; y++)
-            for (int x = 0; x < 4; x++) {
-                var index = y * 4 + x;
-                if (index >= textures.size()) break;
-                new Block(textures.get(index)).draw().translate(x * 390 + (y % 2 == 0 ? 0 : 390 / 2), y * 343);
+        y:
+        for (int y = 0; ; y++)
+            for (int x = 0; x < X_BLOCKS; x++) {
+                var index = y * X_BLOCKS + x;
+                if (index >= textures.size()) break y;
+                new Block(textures.get(index)).draw()
+                        .translate(X_MOD + x * 390 + (y % 2 == 0 ? 0 : 390 / 2), Y_MOD + y * 343);
             }
     }
 
@@ -139,15 +159,18 @@ public class IsoBlock {
                 for (var yi = 0; yi < 16; yi++) {
                     elements[ei++] = new Polygon(left((xi + yi) * SIDE_LEN, yi * SIDE_LEN))
                             .setColor(darken(new Color(texture.get(xi, yi)), 0.7f))
-                            .moveHorizontal((int) (-PIXEL_WIDTH * 16 * Math.sqrt(2)) + 2);
+                            .moveHorizontal((int) (-PIXEL_WIDTH * 16 * Math.sqrt(2)) + 2)
+                            .hide();
 
                     elements[ei++] = new Polygon(right(yi * SIDE_LEN, (xi + yi) * SIDE_LEN))
                             .setColor(darken(new Color(texture.get(15 - xi, yi)), 0.55f))
-                            .moveHorizontal((int) (PIXEL_WIDTH * 16 * Math.sqrt(2)) - 2);
+                            .moveHorizontal((int) (PIXEL_WIDTH * 16 * Math.sqrt(2)) - 2)
+                            .hide();
 
                     elements[ei++] = new Polygon(top(xi * SIDE_LEN, yi * SIDE_LEN))
                             .setColor(texture.getTop(xi, yi))
-                            .moveVertical((int) (16 * -PIXEL_HEIGHT * Math.sqrt(2)));
+                            .moveVertical((int) (16 * -PIXEL_HEIGHT * Math.sqrt(2)))
+                            .hide();
                 }
             }
 
@@ -156,7 +179,7 @@ public class IsoBlock {
 
         void translate(int x, int y) {
             for (var i : elements)
-                i.move(x, y);
+                i.move(x, y).show();
         }
     }
 

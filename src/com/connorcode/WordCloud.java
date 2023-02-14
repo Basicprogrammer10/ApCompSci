@@ -37,7 +37,8 @@ public class WordCloud {
 
     public static void main(String[] argv) throws IOException {
         var raw = new String(
-                Objects.requireNonNull(WordCloud.class.getResourceAsStream("/resources/WordCloud/song.txt")).readAllBytes());
+                Objects.requireNonNull(WordCloud.class.getResourceAsStream("/resources/WordCloud/song.txt"))
+                        .readAllBytes());
         var meta = trimMeta(raw);
         var occurrences = countWords(meta.left());
         stripStopWords(occurrences);
