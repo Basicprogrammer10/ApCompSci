@@ -163,7 +163,7 @@ public class IsoBlock {
                             .hide();
 
                     elements[ei++] = new Polygon(right(yi * SIDE_LEN, (xi + yi) * SIDE_LEN))
-                            .setColor(darken(new Color(texture.get(15 - xi, yi)), 0.55f))
+                            .setColor(darken(new Color(texture.getSide(15 - xi, yi)), 0.60f))
                             .moveHorizontal((int) (PIXEL_WIDTH * 16 * Math.sqrt(2)) - 2)
                             .hide();
 
@@ -186,6 +186,7 @@ public class IsoBlock {
     static class Texture {
         int[] texture;
         int[] topTexture;
+        int[] sideTexture;
 
         // Load texture from file
         Texture(URL file) {
@@ -196,10 +197,17 @@ public class IsoBlock {
             }
 
             try {
-                this.topTexture = load(asTop(file));
+                this.topTexture = load(asTop(file, "top"));
                 System.out.println(" \\  FOUND TOP");
             } catch (IOException ignored) {
                 this.topTexture = new int[0];
+            }
+
+            try {
+                this.sideTexture = load(asTop(file, "side"));
+                System.out.println(" \\  FOUND SIDE");
+            } catch (IOException ignored) {
+                this.sideTexture = new int[0];
             }
         }
 
@@ -211,10 +219,10 @@ public class IsoBlock {
             return image.getRGB(0, 0, 16, 16, null, 0, 16);
         }
 
-        private URL asTop(URL file) {
+        private URL asTop(URL file, String name) {
             var filePath = file.getPath();
             var extensionIndex = filePath.lastIndexOf(".");
-            var newFilePath = filePath.substring(0, extensionIndex) + "_top" + filePath.substring(extensionIndex);
+            var newFilePath = filePath.substring(0, extensionIndex) + "_" + name + filePath.substring(extensionIndex);
             try {
                 return new URL(file.getProtocol(), file.getHost(), file.getPort(), newFilePath);
             } catch (MalformedURLException e) {
@@ -230,6 +238,11 @@ public class IsoBlock {
         int getTop(int x, int y) {
             if (topTexture.length == 0) return get(x, y);
             return topTexture[y * 16 + x];
+        }
+
+        int getSide(int x, int y) {
+            if (sideTexture.length == 0) return get(x, y);
+            return sideTexture[y * 16 + x];
         }
     }
 }
