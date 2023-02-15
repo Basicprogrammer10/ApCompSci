@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
@@ -34,27 +35,34 @@ public class IsoBlock {
             Objects.requireNonNull(loader.getResourceAsStream("resources/IsoBlock/textures.txt")))).lines()
             .filter(x -> !x.startsWith("#")).collect(Collectors.toList());
 
-    static {
-        new Canvas(3721, 1750, "IsoBlock - Connor Slade");
-    }
+    static Canvas canvas = new Canvas(3721, 1750, "IsoBlock - Connor Slade");
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+//        System.setProperty("sun.java2d.opengl", "true");
         Collections.shuffle(BLOCKS);
+
         // enable dark mode
-        new Rectangle(0, 0, 10000, 10000, Color.BLACK);
+        new Rectangle(0, 0, canvas.width() / 2, canvas.width() / 2, Color.BLACK);
 
         // Disable auto-centering
-        App.canvas.canvas.renderLifecycle = new Canvas.CanvasComponent.RenderLifecycle() {
+        var canvas = App.canvas.canvas;
+        canvas.jframe.setResizable(false);
+        canvas.jframe.setIconImage(
+                ImageIO.read(Objects.requireNonNull(loader.getResource("resources/IsoBlock/basalt.png"))));
+        canvas.renderLifecycle = new Misc.FrameCounter() {
             @Override
             public void onResize(Canvas.CanvasComponent canvas, ComponentEvent e) {
                 canvas.repaint();
             }
         };
 
+        // Load textures
         var textures = BLOCKS.stream()
                 .map(i -> new Texture(loader.getResource("resources/IsoBlock/" + i)))
                 .collect(Collectors.toList());
+        System.out.printf("\n[*] %d blocks loaded\n", textures.size());
 
+        // Draw blocks
         y:
         for (int y = 0; ; y++)
             for (int x = 0; x < X_BLOCKS; x++) {
@@ -63,6 +71,14 @@ public class IsoBlock {
                 new Block(textures.get(index)).draw()
                         .translate(X_MOD + x * 390 + (y % 2 == 0 ? 0 : 390 / 2), Y_MOD + y * 343);
             }
+        System.out.printf("[*] %d elements created\n", canvas.elements.size());
+
+        // Save Image
+        var container = canvas.jframe.getContentPane();
+        var img = new BufferedImage(container.getWidth(), container.getHeight(), BufferedImage.TYPE_INT_RGB);
+        var gc = img.createGraphics();
+        container.printAll(gc);
+        ImageIO.write(img, "png", new File("out.png"));
     }
 
     static Color darken(Color color, float light) {
@@ -198,23 +214,25 @@ public class IsoBlock {
 
             try {
                 this.topTexture = load(asTop(file, "top"));
-                System.out.println(" \\  FOUND TOP");
             } catch (IOException ignored) {
                 this.topTexture = new int[0];
             }
 
             try {
                 this.sideTexture = load(asTop(file, "side"));
-                System.out.println(" \\  FOUND SIDE");
             } catch (IOException ignored) {
                 this.sideTexture = new int[0];
             }
+
+            var two = this.sideTexture.length != 0 && this.topTexture.length != 0;
+            System.out.printf("[*] Loaded %s\n", file);
+            if (this.sideTexture.length != 0) System.out.printf(" %s Loaded side\n", two ? "|" : "\\");
+            if (this.topTexture.length != 0) System.out.print(" \\ Loaded top\n");
         }
 
         private int[] load(URL file) throws IOException {
             BufferedImage image;
             image = ImageIO.read(file);
-            System.out.printf("[*] Loaded %s - (%d x %d)\n", file, image.getWidth(), image.getHeight());
             assert image.getWidth() == 16 && image.getHeight() == 16;
             return image.getRGB(0, 0, 16, 16, null, 0, 16);
         }

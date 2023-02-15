@@ -4,6 +4,10 @@ all in java 11. \**sigh*\*
 
 ## Projects
 
+### [Tessellation Project](https://github.com/Sigma-8214/ApCompSci/blob/main/src/com/connorcode/IsoBlock.java)
+
+<img src="https://user-images.githubusercontent.com/50306817/218925721-b13c4884-0949-4490-8b2c-e75173444444.jpg" width="500"></img>
+
 ### [Word Cloud](https://github.com/Sigma-8214/ApCompSci/blob/main/src/com/connorcode/WordCloud.java)
 
 <img src="https://user-images.githubusercontent.com/50306817/211898484-a92ec19a-ebc3-4524-83dd-106b806c6975.png" width="500"></img>
