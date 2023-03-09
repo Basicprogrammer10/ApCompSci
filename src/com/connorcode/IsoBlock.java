@@ -1,13 +1,12 @@
 package com.connorcode;
 
-import paintingcanvas.App;
-import paintingcanvas.Canvas;
+import paintingcanvas.canvas.Canvas;
 import paintingcanvas.drawable.Polygon;
 import paintingcanvas.drawable.Rectangle;
+import paintingcanvas.extensions.FrameCounter;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,26 +34,20 @@ public class IsoBlock {
             Objects.requireNonNull(loader.getResourceAsStream("resources/IsoBlock/textures.txt")))).lines()
             .filter(x -> !x.startsWith("#")).collect(Collectors.toList());
 
-    static Canvas canvas = new Canvas(3721, 1750, "IsoBlock - Connor Slade");
-
     public static void main(String[] args) throws IOException {
-//        System.setProperty("sun.java2d.opengl", "true");
+        System.setProperty("sun.java2d.opengl", "true");
+        System.setProperty("paintingcanvas.autoCenter", "false");
+        var canvas = new Canvas(3721, 1750, "IsoBlock - Connor Slade");
+        new FrameCounter().attach();
         Collections.shuffle(BLOCKS);
 
         // enable dark mode
-        new Rectangle(0, 0, canvas.width() / 2, canvas.width() / 2, Color.BLACK);
+        new Rectangle(0, 0, canvas.getWidth() / 2, canvas.getHeight() / 2, Color.BLACK);
 
         // Disable auto-centering
-        var canvas = App.canvas.canvas;
-        canvas.jframe.setResizable(false);
-        canvas.jframe.setIconImage(
+        canvas.panel.jframe.setResizable(false);
+        canvas.panel.jframe.setIconImage(
                 ImageIO.read(Objects.requireNonNull(loader.getResource("resources/IsoBlock/basalt.png"))));
-        canvas.renderLifecycle = new Misc.FrameCounter() {
-            @Override
-            public void onResize(Canvas.CanvasComponent canvas, ComponentEvent e) {
-                canvas.repaint();
-            }
-        };
 
         // Load textures
         var textures = BLOCKS.stream()
@@ -74,7 +67,7 @@ public class IsoBlock {
         System.out.printf("[*] %d elements created\n", canvas.elements.size());
 
         // Save Image
-        var container = canvas.jframe.getContentPane();
+        var container = canvas.panel.jframe.getContentPane();
         var img = new BufferedImage(container.getWidth(), container.getHeight(), BufferedImage.TYPE_INT_RGB);
         var gc = img.createGraphics();
         container.printAll(gc);
@@ -224,9 +217,8 @@ public class IsoBlock {
                 this.sideTexture = new int[0];
             }
 
-            var two = this.sideTexture.length != 0 && this.topTexture.length != 0;
             System.out.printf("[*] Loaded %s\n", file);
-            if (this.sideTexture.length != 0) System.out.printf(" %s Loaded side\n", two ? "|" : "\\");
+            if (this.sideTexture.length != 0) System.out.printf(" %s Loaded side\n", this.topTexture.length != 0 ? "|" : "\\");
             if (this.topTexture.length != 0) System.out.print(" \\ Loaded top\n");
         }
 
